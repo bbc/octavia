@@ -1,0 +1,4 @@
+---
+fixes:
+  - |
+    Fixed updating members with the wrong pool ID locking the load balancer.

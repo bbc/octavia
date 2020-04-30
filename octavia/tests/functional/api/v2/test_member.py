@@ -864,12 +864,18 @@ class TestMember(base.BaseAPITest):
             lb_id=self.lb_id, listener_id=self.listener_id,
             pool_id=self.pool_id, member_id=api_member.get('id'))
 
-    def test_bad_update(self):
+    def test_update_wrong_pool(self):
         api_member = self.create_member(
             self.pool_id, '10.0.0.1', 80).get(self.root_tag)
-        new_member = {'protocol_port': 'ten'}
-        self.put(self.member_path.format(member_id=api_member.get('id')),
-                 self._build_body(new_member), status=400)
+        self.set_lb_status(self.lb_id)
+        new_member = {'monitor_port': '81'}
+        bad_member_path = (
+            self.MEMBERS_PATH.format(pool_id=self.pool_with_listener_id) +
+            '/' + api_member.get('id'))
+        self.put(bad_member_path, self._build_body(new_member), status=404)
+        self.assert_correct_status(
+            lb_id=self.lb_id, listener_id=self.listener_id,
+            pool_id=self.pool_id, member_id=api_member.get('id'))
 
     def test_update_with_bad_handler(self):
         api_member = self.create_member(

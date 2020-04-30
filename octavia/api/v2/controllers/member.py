@@ -231,13 +231,13 @@ class MemberController(base.BaseController):
         self._auth_validate_action(context, db_member.project_id,
                                    constants.RBAC_PUT)
 
+        self._validate_pool_id(id, db_member.pool_id)
+
         self._test_lb_and_listener_and_pool_statuses(context.session,
                                                      member=db_member)
         self.repositories.member.update(
             context.session, db_member.id,
             provisioning_status=constants.PENDING_UPDATE)
-
-        self._validate_pool_id(id, db_member.pool_id)
 
         try:
             LOG.info("Sending Update of Member %s to handler", id)
