@@ -1,0 +1,5 @@
+---
+fixes:
+  - |
+    Fixed updating listeners with a bad TLS reference locking the load
+    balancer.

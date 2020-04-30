@@ -1076,6 +1076,8 @@ class TestListener(base.BaseAPITest):
         self.assertIn(sni1, response['faultstring'])
         self.assertNotIn(sni2, response['faultstring'])
         self.assertNotIn(tls_ref, response['faultstring'])
+        self.assert_correct_lb_status(self.lb_id, constants.ONLINE,
+                                      constants.ACTIVE)
 
     def test_update_pending_update(self):
         lb = self.create_load_balancer(uuidutils.generate_uuid())
