@@ -330,27 +330,29 @@ class ListenersController(base.BaseController):
         if listener.default_pool_id:
             self._validate_pool(context.session, load_balancer_id,
                                 listener.default_pool_id, db_listener.protocol)
-        self._test_lb_and_listener_statuses(context.session, load_balancer_id,
-                                            id=id)
 
-        sni_containers = listener.sni_container_refs or []
-        tls_refs = [sni for sni in sni_containers]
-        if listener.default_tls_container_ref:
-            tls_refs.append(listener.default_tls_container_ref)
-        self._validate_tls_refs(tls_refs)
+        with db_api.get_lock_session() as lock_session:
+            self._test_lb_and_listener_statuses(lock_session, load_balancer_id,
+                                                id=id)
 
-        try:
-            LOG.info("Sending Update of Listener %s to handler", id)
-            self.handler.update(db_listener, listener)
-        except Exception:
-            with excutils.save_and_reraise_exception(
-                    reraise=False), db_api.get_lock_session() as lock_session:
-                self._reset_lb_status(
-                    lock_session, lb_id=db_listener.load_balancer_id)
-                # Listener now goes to ERROR
-                self.repositories.listener.update(
-                    lock_session, db_listener.id,
-                    provisioning_status=constants.ERROR)
+            sni_containers = listener.sni_container_refs or []
+            tls_refs = [sni for sni in sni_containers]
+            if listener.default_tls_container_ref:
+                tls_refs.append(listener.default_tls_container_ref)
+            self._validate_tls_refs(tls_refs)
+
+            try:
+                LOG.info("Sending Update of Listener %s to handler", id)
+                self.handler.update(db_listener, listener)
+            except Exception:
+                with excutils.save_and_reraise_exception(reraise=False):
+                    self._reset_lb_status(
+                        lock_session, lb_id=db_listener.load_balancer_id)
+                    # Listener now goes to ERROR
+                    self.repositories.listener.update(
+                        lock_session, db_listener.id,
+                        provisioning_status=constants.ERROR)
+
         db_listener = self._get_db_listener(context.session, id)
         result = self._convert_db_to_type(db_listener,
                                           listener_types.ListenerResponse)
